@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Drug Class Information</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+    <link rel="stylesheet" href="styles.css">
     <script>
         async function getDrugClass() {
             const drugName = document.getElementById('drugName').value;
@@ -22,6 +22,7 @@
 
             if (response.ok) {
                 const table = document.createElement('table');
+                table.border = '1';
 
                 // Create table body
                 const tbody = document.createElement('tbody');
@@ -40,37 +41,22 @@
                 table.appendChild(tbody);
 
                 resultDiv.appendChild(table);
-
-                // Store the result text for TTS
-                document.getElementById('resultText').value = resultDiv.innerText;
+                readResult(resultDiv.innerText);
             } else {
                 resultDiv.textContent = `Error: ${data.error}`;
             }
         }
 
-        async function handleTTS() {
-            const text = document.getElementById('resultText').value;
-            await fetch('/speak', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ text: text }),
-            });
+        function readResult(text) {
+            const speech = new SpeechSynthesisUtterance(text);
+            window.speechSynthesis.speak(speech);
         }
     </script>
 </head>
 <body>
-    <div class="container">
-        <h1>meDiCuS: Essential Drug Information</h1>
-        <div class="quote">"The art of healing comes from nature, not from the physician. Therefore the physician must start from nature, with an open mind." - Paracelsus</div>
-        <input type="text" id="drugName" placeholder="Enter drug name">
-        <div class="buttons">
-            <button onclick="getDrugClass()">Find</button>
-            <button onclick="handleTTS()">Read Results</button>
-        </div>
-        <input type="hidden" id="resultText" value="">
-        <div id="result"></div>
-    </div>
+    <h1>Drug Class Information</h1>
+    <input type="text" id="drugName" placeholder="Enter drug name">
+    <button onclick="getDrugClass()">Get Drug Class</button>
+    <div id="result"></div>
 </body>
 </html>

@@ -1,6 +1,5 @@
 from flask import Flask, request, jsonify, render_template
 import requests
-import pyttsx3
 
 app = Flask(__name__)
 
@@ -50,19 +49,5 @@ def get_drug_class():
 
     return jsonify({'drug_name': drug_name, 'classes': mapped_classes})
 
-@app.route('/speak', methods=['POST'])
-def speak():
-    text = request.json.get('text')
-    if not text:
-        return jsonify({'error': 'No text provided'}), 400
-
-    engine = pyttsx3.init()
-    engine.say(text)
-    engine.runAndWait()
-
-    return jsonify({'status': 'success'})
-
 if __name__ == '__main__':
-    import os
-    port = int(os.environ.get('PORT', 5000))
-    app.run(host='0.0.0.0', port=port, debug=True)
+    app.run(debug=True)
