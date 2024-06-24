@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Drug Class Information</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+    <script>
+        async function getDrugClass() {
+            const drugName = document.getElementById('drugName').value;
+            const response = await fetch('/get_drug_class', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ drug_name: drugName }),
+            });
+            const data = await response.json();
+
+            const resultDiv = document.getElementById('result');
+            resultDiv.innerHTML = '';  // Clear previous results
+
+            if (response.ok) {
+                const table = document.createElement('table');
+
+                // Create table body
+                const tbody = document.createElement('tbody');
+                for (const [rela, classes] of Object.entries(data.classes)) {
+                    const row = document.createElement('tr');
+                    const tdRela = document.createElement('td');
+                    tdRela.textContent = rela;
+                    row.appendChild(tdRela);
+
+                    const tdClasses = document.createElement('td');
+                    tdClasses.textContent = classes.join(', ');
+                    row.appendChild(tdClasses);
+
+                    tbody.appendChild(row);
+                }
+                table.appendChild(tbody);
+
+                resultDiv.appendChild(table);
+
+                // Store the result text for TTS
+                document.getElementById('resultText').value = resultDiv.innerText;
+            } else {
+                resultDiv.textContent = `Error: ${data.error}`;
+            }
+        }
+
+        async function handleTTS() {
+            const text = document.getElementById('resultText').value;
+            await fetch('/speak', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ text: text }),
+            });
+        }
+    </script>
+</head>
+<body>
+    <div class="container">
+        <h1>meDiCuS: Essential Drug Information</h1>
+        <div class="quote">"The art of healing comes from nature, not from the physician. Therefore the physician must start from nature, with an open mind." - Paracelsus</div>
+        <input type="text" id="drugName" placeholder="Enter drug name">
+        <div class="buttons">
+            <button onclick="getDrugClass()">Find</button>
+            <button onclick="handleTTS()">Read Results</button>
+        </div>
+        <input type="hidden" id="resultText" value="">
+        <div id="result"></div>
+    </div>
+</body>
+</html>
