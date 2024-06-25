@@ -4,10 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Drug Class Information</title>
-    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
     <script>
         async function getDrugClass() {
             const drugName = document.getElementById('drugName').value;
+
             const response = await fetch('/get_drug_class', {
                 method: 'POST',
                 headers: {
@@ -22,41 +23,83 @@
 
             if (response.ok) {
                 const table = document.createElement('table');
-                table.border = '1';
 
                 // Create table body
                 const tbody = document.createElement('tbody');
-                for (const [rela, classes] of Object.entries(data.classes)) {
-                    const row = document.createElement('tr');
-                    const tdRela = document.createElement('td');
-                    tdRela.textContent = rela;
-                    row.appendChild(tdRela);
+                const orderedClassTypes = [
+                    "Contraindications",
+                    "Contraindications (MoA)",
+                    "Contraindications (Effects)",
+                    "Contraindications (Chem)",
+                    "Effects",
+                    "MoA",
+                    "Drug Class",
+                    "To Treat"
+                ];
 
-                    const tdClasses = document.createElement('td');
-                    tdClasses.textContent = classes.join(', ');
-                    row.appendChild(tdClasses);
+                orderedClassTypes.forEach(classType => {
+                    if (data.classes[classType].length > 0) {
+                        const row = document.createElement('tr');
+                        const tdRela = document.createElement('td');
+                        tdRela.textContent = classType;
+                        row.appendChild(tdRela);
 
-                    tbody.appendChild(row);
-                }
+                        const tdClasses = document.createElement('td');
+                        tdClasses.textContent = data.classes[classType].join(', ');
+                        row.appendChild(tdClasses);
+
+                        tbody.appendChild(row);
+                    }
+                });
+
                 table.appendChild(tbody);
-
                 resultDiv.appendChild(table);
-                readResult(resultDiv.innerText);
+
+                // Store the result text for TTS and download
+                document.getElementById('resultText').value = resultDiv.innerText;
             } else {
                 resultDiv.textContent = `Error: ${data.error}`;
             }
         }
 
-        function readResult(text) {
-            const speech = new SpeechSynthesisUtterance(text);
-            window.speechSynthesis.speak(speech);
+        function downloadResults() {
+            const text = document.getElementById('resultText').value;
+            const blob = new Blob([text], { type: 'text/plain' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'drug_class_results.txt';
+            document.body.appendChild(a);
+            a.click();
+            window.URL.revokeObjectURL(url);
+            document.body.removeChild(a);
+        }
+
+        async function handleTTS() {
+            const text = document.getElementById('resultText').value;
+            await fetch('/speak', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ text: text }),
+            });
         }
     </script>
 </head>
 <body>
-    <h1>Drug Class Information</h1>
-    <input type="text" id="drugName" placeholder="Enter drug name">
-    <button onclick="getDrugClass()">Get Drug Class</button>
-    <div id="result"></div>
+    <div class="container">
+        <h1>MEDICUS: Essential Drug Information</h1>
+        <h2>Why did the chicken cross the road?</h2>
+        <div class="quote">{{ quote }}</div>
+        <input type="text" id="drugName" placeholder="Enter drug name">
+        <div class="buttons">
+            <button onclick="getDrugClass()">Find</button>
+            <button onclick="handleTTS()">Read</button>
+            <button onclick="downloadResults()">Download</button>
+        </div>
+        <input type="hidden" id="resultText" value="">
+        <div id="result"></div>
+    </div>
 </body>
 </html>
