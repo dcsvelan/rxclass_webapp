@@ -125,9 +125,4 @@ def download_results():
 
     return send_file(file_stream, as_attachment=True, download_name='results.xlsx')
 
-if __name__ == '__main__':
-    app.run(debug=True)
-
-
-
 
