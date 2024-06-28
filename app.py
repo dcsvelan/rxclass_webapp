@@ -101,37 +101,33 @@ def speak():
 
     return jsonify({'status': 'success'})
 
+# Excel download endpoint
 @app.route('/download_results', methods=['POST'])
 def download_results():
-    drug_name = request.json.get('drug_name')
-    if not drug_name:
-        return jsonify({'error': 'No drug name provided'}), 400
+    data = request.json
+    workbook = Workbook()
+    sheet = workbook.active
+    sheet.title = "Results"
 
-    # Check if the drug class data is cached
-    if drug_name not in class_cache:
-        return jsonify({'error': 'Drug class data not found'}), 404
+    # Adding headers
+    headers = data['headers']
+    sheet.append(headers)
 
-    drug_class_data = class_cache[drug_name]
+    # Adding rows
+    rows = data['rows']
+    for row in rows:
+        sheet.append(row)
 
-    # Create an Excel workbook and sheet
-    wb = Workbook()
-    ws = wb.active
-    ws.title = "Drug Class Results"
+    # Save the workbook to a BytesIO object
+    file_stream = BytesIO()
+    workbook.save(file_stream)
+    file_stream.seek(0)
 
-    # Add headers
-    ws.append(["Drug Name", "Class Type", "Classes"])
-
-    # Add data
-    for class_type, classes in drug_class_data['classes'].items():
-        for cls in classes:
-            ws.append([drug_name, class_type, cls])
-
-    # Save workbook to a BytesIO buffer
-    buffer = BytesIO()
-    wb.save(buffer)
-    buffer.seek(0)
-
-    return send_file(buffer, download_name=f'{drug_name}_drug_class_results.xlsx', as_attachment=True)
+    return send_file(file_stream, as_attachment=True, download_name='results.xlsx')
 
 if __name__ == '__main__':
     app.run(debug=True)
+
+
+
+
