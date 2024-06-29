@@ -61,8 +61,7 @@ def get_drug_class():
 
     # Check if the drug class data is cached
     if drug_name in class_cache:
-        joke = random.choice(jokes)
-        return jsonify({**class_cache[drug_name], 'joke': joke})
+        return jsonify(class_cache[drug_name])
 
     class_types = {rela: set() for rela in ordered_class_types}
 
@@ -86,8 +85,7 @@ def get_drug_class():
     # Cache the drug class data
     class_cache[drug_name] = {'drug_name': drug_name, 'classes': mapped_classes}
 
-    joke = random.choice(jokes)
-    return jsonify({'drug_name': drug_name, 'classes': mapped_classes, 'joke': joke})
+    return jsonify({'drug_name': drug_name, 'classes': mapped_classes})
 
 @app.route('/speak', methods=['POST'])
 def speak():
@@ -101,28 +99,31 @@ def speak():
 
     return jsonify({'status': 'success'})
 
-# Excel download endpoint
 @app.route('/download_results', methods=['POST'])
 def download_results():
-    data = request.json
-    workbook = Workbook()
-    sheet = workbook.active
-    sheet.title = "Results"
+    drug_name = request.json.get('drug_name')
+    if not drug_name:
+        return jsonify({'error': 'No drug name provided'}), 400
 
-    # Adding headers
-    headers = data['headers']
-    sheet.append(headers)
+    # Check if the drug class data is cached
+    if drug_name not in class_cache:
+        return jsonify({'error': 'Drug class data not found'}), 404
 
-    # Adding rows
-    rows = data['rows']
-    for row in rows:
-        sheet.append(row)
+    drug_class_data = class_cache[drug_name]
 
-    # Save the workbook to a BytesIO object
-    file_stream = BytesIO()
-    workbook.save(file_stream)
-    file_stream.seek(0)
+    # Create Excel workbook
+    wb = Workbook()
+    ws = wb.active
+    ws.append(['Class Type', 'Classes'])
+    for class_type, classes in drug_class_data['classes'].items():
+        ws.append([class_type, ', '.join(classes)])
 
-    return send_file(file_stream, as_attachment=True, download_name='results.xlsx')
+    # Save workbook to BytesIO buffer
+    buffer = BytesIO()
+    wb.save(buffer)
+    buffer.seek(0)
 
+    return send_file(buffer, attachment_filename=f'{drug_name}_drug_class_results.xlsx', as_attachment=True)
 
+if __name__ == '__main__':
+    app.run(debug=True)
